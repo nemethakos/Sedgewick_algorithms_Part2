@@ -44,6 +44,9 @@ public class BoggleSolver {
         return score;
     }
 
+    /**
+     * for testing only
+     */
     public static void main(String[] args) {
         In in = new In(args[0]);
         List<String> dictionary = new ArrayList<>();
@@ -83,7 +86,7 @@ public class BoggleSolver {
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                addWords(row, col, st, words);
+                findAllWordsFromCell(row, col, st, words);
             }
         }
 
@@ -100,7 +103,7 @@ public class BoggleSolver {
         return score;
     }
 
-    private void addWords(int row, int col, StepTable st, Set<String> words) {
+    private void findAllWordsFromCell(int row, int col, StepTable st, Set<String> words) {
         BoggleTST.Node<Integer> root = tst.getRoot();
         Step first = new Step(Util.getIndex(row, col, st.getCols()),
                               st.getChar(row, col),
@@ -110,6 +113,17 @@ public class BoggleSolver {
         dfs(root, first, currentWord, currentWordLength, st, words);
     }
 
+    /**
+     * Depth First Search with backtracking to find all valid words from <code>currentStep</code>
+     *
+     * @param node              the {@link BoggleTST.Node} either root of the {@link BoggleTST} or
+     *                          the level of currentWord
+     * @param currentStep       the next step
+     * @param currentWord       the current word
+     * @param currentWordLength the length of the current word
+     * @param st                {@link StepTable}
+     * @param words             words collected so far
+     */
     private void dfs(BoggleTST.Node<Integer> node,
                      Step currentStep,
                      char[] currentWord,
@@ -117,21 +131,25 @@ public class BoggleSolver {
                      StepTable st,
                      Set<String> words) {
 
-
-        // mark as visited
+        // append char to current word
         currentWordLength = getWord(currentWord, currentWordLength, currentStep.getCharacter());
 
+        // mark current cell as visited
         st.visit(currentStep, true);
 
+        // handling special "Qu" case
         int characterStep = 1;
         if (endsWithQU(currentWord, currentWordLength)) {
             characterStep = 2;
         }
 
+        // if the current word is just one character the root node is used, when there are more
+        // characters in the current word, the level below the current node
         if (currentWordLength > characterStep) {
             node = node.getMid();
         }
 
+        // find the Node starting with the current word using the node previously found
         BoggleTST.Node<Integer> nextNode = tst
                 .get(node, currentWord, currentWordLength, currentWordLength - characterStep);
 
@@ -141,7 +159,9 @@ public class BoggleSolver {
                 String currentWordString = new String(currentWord, 0, currentWordLength);
                 words.add(currentWordString);
             }
+            // is there a longer word starting with current word?
             if (nextNode.getMid() != null) {
+
                 List<Step> availableNextSteps = st.getAvailableNextSteps(currentStep);
                 for (Step nextStep : availableNextSteps) {
                     if (!st.isVisited(nextStep)) {
@@ -151,6 +171,7 @@ public class BoggleSolver {
             }
         }
 
+        // unvisit the current cell
         st.visit(currentStep, false);
     }
 
@@ -162,6 +183,15 @@ public class BoggleSolver {
         return false;
     }
 
+    /**
+     * Appends the nextChar to the currentWord. Handles the special 'Qu' case
+     *
+     * @param currentWord       the current word. The array will be changed as the character is
+     *                          appended
+     * @param currentWordLength the length of the current word
+     * @param nextChar          the next character
+     * @return the new length of the current word
+     */
     private int getWord(char[] currentWord, int currentWordLength, char nextChar) {
         if (nextChar == 'Q') {
             currentWord[currentWordLength++] = 'Q';

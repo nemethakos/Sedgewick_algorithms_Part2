@@ -1,41 +1,88 @@
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents the the precomputed steps which are accessible from a cell in the boggle table
+ */
 public class StepTable {
+    /**
+     * Number of rows
+     */
     private int rows;
+
+    /**
+     * Number of columns
+     */
     private int cols;
+
+    /**
+     * Table of {@link List} of {@link Step}s accessible from the cells of the table, flattened into
+     * 1d list
+     */
     private List<List<Step>> steps = new ArrayList<>();
+
+    /**
+     * Table of characters flattened into 1d array
+     */
     private char[] chars;
+
+    /**
+     * Table of visited flags flattened into 1d array
+     */
     private boolean[] visited;
 
-    public StepTable(BoggleBoard bb) {
+    public StepTable(BoggleBoard board) {
 
-        this.rows = bb.rows();
-        this.cols = bb.cols();
+        this.rows = board.rows();
+        this.cols = board.cols();
 
         this.chars = new char[rows * cols];
         this.visited = new boolean[rows * cols];
 
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                chars[Util.getIndex(r, c, cols)] = bb.getLetter(r, c);
+        for (int currentRow = 0; currentRow < rows; currentRow++) {
+            for (int currentColumn = 0; currentColumn < cols; currentColumn++) {
 
-                ArrayList<Step> sl = new ArrayList<>();
+                int currentIndex = Util.getIndex(currentRow, currentColumn, cols);
 
-                for (int rr = r - 1; rr <= r + 1; rr++) {
-                    for (int cc = c - 1; cc <= c + 1; cc++) {
-                        if (isValid(r, c, rr, cc, rows, cols)) {
-                            sl.add(new Step(Util.getIndex(rr, cc, cols),
-                                            bb.getLetter(rr, cc), cols));
+                chars[currentIndex] = board.getLetter(currentRow, currentColumn);
+
+                ArrayList<Step> stepList = new ArrayList<>();
+
+                for (int accessibleRow = currentRow - 1; accessibleRow <= currentRow + 1;
+                     accessibleRow++) {
+                    for (int accessibleColumn = currentColumn - 1;
+                         accessibleColumn <= currentColumn + 1; accessibleColumn++) {
+
+                        if (isValid(currentRow, currentColumn, accessibleRow, accessibleColumn,
+                                    rows, cols)) {
+
+                            int accessibleIndex = Util
+                                    .getIndex(accessibleRow, accessibleColumn, cols);
+                            char accessibleLetter = board
+                                    .getLetter(accessibleRow, accessibleColumn);
+                            Step step = new Step(accessibleIndex, accessibleLetter, cols);
+
+                            stepList.add(step);
                         }
                     }
                 }
 
-                steps.add(sl);
+                steps.add(stepList);
             }
         }
     }
 
+    /**
+     * returns true if the cell at (row,col)  is a valid step from (currentRow, currentColumn)
+     *
+     * @param currentRow startin row
+     * @param currentCol starting column
+     * @param row        the row of the cell to test the validity of
+     * @param col        the column of the cell to test the validity of
+     * @param rowNum     the number of rows
+     * @param colNum     the number of columns
+     * @return true if the cell is validly accessible from (currentRow, currentColumn)
+     */
     private static boolean isValid(int currentRow, int currentCol, int row, int col, int rowNum,
                                    int colNum) {
         boolean result = false;
