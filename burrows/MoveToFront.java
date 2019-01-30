@@ -6,6 +6,8 @@ public class MoveToFront {
     // if args[0] is '+', apply move-to-front decoding
     public static void main(String[] args) {
 
+
+
         if (args.length == 0) {
             throw new IllegalArgumentException("No flag (- or +) specified!");
         }
