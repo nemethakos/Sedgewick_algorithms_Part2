@@ -2,11 +2,13 @@ import edu.princeton.cs.algs4.BinaryStdIn;
 import edu.princeton.cs.algs4.BinaryStdOut;
 
 public class MoveToFront {
+
+    private static final short ALPHABET_SIZE = 256;
+    private static final short MAX_BYTE_VALUE = 255;
+
     // if args[0] is '-', apply move-to-front encoding
     // if args[0] is '+', apply move-to-front decoding
     public static void main(String[] args) {
-
-
 
         if (args.length == 0) {
             throw new IllegalArgumentException("No flag (- or +) specified!");
@@ -28,12 +30,12 @@ public class MoveToFront {
     // apply move-to-front encoding, reading from standard input and writing to standard output
     public static void encode() {
 
-        int[] alphabet = getAlphabet();
+        byte[] alphabet = getAlphabet();
 
         while (!BinaryStdIn.isEmpty()) {
-            int character = BinaryStdIn.readByte();
-            int out = moveToFront(alphabet, character);
-            BinaryStdOut.write((char) out);
+            int value = BinaryStdIn.readChar();
+            int out = moveToFront(alphabet, (byte) (value & MAX_BYTE_VALUE));
+            BinaryStdOut.write((byte) (out & MAX_BYTE_VALUE));
         }
         BinaryStdOut.close();
     }
@@ -53,53 +55,49 @@ public class MoveToFront {
      */
     public static void decode() {
 
-        int[] alphabet = getAlphabet();
+        byte[] alphabet = getAlphabet();
 
         while (!BinaryStdIn.isEmpty()) {
-            int index = BinaryStdIn.readByte();
-            char character = (char) alphabet[index];
-            BinaryStdOut.write(character);
-            int out = moveToFront(alphabet, character);
+            int index = Byte.toUnsignedInt(BinaryStdIn.readByte());
+            int value = alphabet[index];
+            BinaryStdOut.write((byte) (value & MAX_BYTE_VALUE));
+            int out = moveToFront(alphabet, (byte) (value & MAX_BYTE_VALUE));
         }
         BinaryStdOut.close();
     }
 
-    private static int[] getAlphabet() {
-        int[] alphabet = new int[256];
-        for (int i = 0; i < 256; i++) {
-            alphabet[i] = i;
+    private static byte[] getAlphabet() {
+        byte[] alphabet = new byte[ALPHABET_SIZE];
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            alphabet[i] = (byte) (i & MAX_BYTE_VALUE);
         }
         return alphabet;
     }
 
-    private static void moveToFrontOneStep(int[] alphabet, int in, int from, int to) {
+    private static void moveToFrontOneStep(byte[] alphabet, byte in, int from, int to) {
         int out = moveToFront(alphabet, in);
         String buf = printBuffer(alphabet, from, to);
         System.out.println(String.format("in: %c, out: %2d, buf: %s", in, out, buf));
     }
 
-    private static int moveToFront(int[] alphabet, int character) {
+    private static int moveToFront(byte[] alphabet, byte character) {
         // get old index
         int index = getIndex(alphabet, character);
 
-        if (index > 0) {
+        byte temp = alphabet[index];
 
-            int temp = alphabet[index];
-
-            System.arraycopy(alphabet, 0, alphabet, 1, index);
-            alphabet[0] = temp;
-
-        }
+        System.arraycopy(alphabet, 0, alphabet, 1, index);
+        alphabet[0] = temp;
 
         return index;
 
     }
 
-    private static String printBuffer(int[] alphabet, int from, int to) {
+    private static String printBuffer(byte[] alphabet, int from, int to) {
         StringBuilder sb = new StringBuilder();
         for (int i = from; i <= to; i++) {
-            int character = alphabet[i];
-            if (character <= ' ') {
+            char character = (char) (alphabet[i] & MAX_BYTE_VALUE);
+            if ((character & MAX_BYTE_VALUE) <= ' ') {
                 character = '_';
             }
             sb.append(String.format("%c", character));
@@ -107,14 +105,12 @@ public class MoveToFront {
         return sb.toString();
     }
 
-    private static int getIndex(int[] alphabet, int character) {
-        int index = -1;
-        for (int i = 0; i < 256; i++) {
-            if (alphabet[i] == character) {
-                index = i;
-                break;
+    private static int getIndex(byte[] alphabet, int character) {
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            if ((alphabet[i] & MAX_BYTE_VALUE) == (character & MAX_BYTE_VALUE)) {
+                return i;
             }
         }
-        return index;
+        throw new IllegalArgumentException();
     }
 }
