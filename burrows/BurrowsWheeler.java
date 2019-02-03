@@ -6,51 +6,17 @@ import java.util.Arrays;
 public class BurrowsWheeler {
 
     private static final int MAX_BYTE_VALUE = 255;
+    private static final int RADIX = 256;
 
-    // private static final short BITS_PER_BYTE = 8;
-    // apply Burrows-Wheeler transform, reading from standard input and writing to standard output
-
-    // if args[0] is '-', apply Burrows-Wheeler transform
-    // if args[0] is '+', apply Burrows-Wheeler inverse transform
+    /**
+     * <p>Apply Burrows-Wheeler transform, reading from standard input and writing to standard
+     * output
+     * <p>if args[0] is '-', apply Burrows-Wheeler transform
+     * <p>if args[0] is '+', apply Burrows-Wheeler inverse transform
+     *
+     * @param args program arguments: first argument is + for decoding, - for encoding
+     */
     public static void main(String[] args) {
-
-        //BurrowsWheeler.transform();
-
-
-
-        //char[] chars = "ABRACADABRA!".toCharArray();
-
-        //System.out.println(Arrays.toString(chars));
-
-
-        //System.out.println(sort(chars));
-
-
-        //String encoded = "ARD!RCAAAABB";
-        // SortResult sr = sort(encoded.toCharArray());
-        //int[] next = getNext(encoded.toCharArray(), sr.sorted, sr.freq, 3);
-
-        //System.out.println(Arrays.toString(next));
-
-        //System.out.println(Arrays.toString(decode(encoded.toCharArray(), 3)));
-
-        /*
-        String s = "ABRACADABRA!";
-
-        CircularSuffixArray csa = new CircularSuffixArray(s);
-
-        int length = csa.length();
-
-        int[] index = new int[length];
-
-        for (int i = 0; i < length; i++) {
-            index[i] = csa.index(i);
-        }
-
-        for (int i=0; i<s.length(); i++) {
-            System.out.println("i:"+i+", "+getLastCharOfStringAtIndex(s, index[i]));
-        }*/
-
 
         if (args.length == 0) {
             throw new IllegalArgumentException("No flag (- or +) specified!");
@@ -65,9 +31,7 @@ public class BurrowsWheeler {
                 break;
             default:
                 throw new IllegalArgumentException("Only + or - is allowed!");
-
         }
-
     }
 
     /**
@@ -77,13 +41,6 @@ public class BurrowsWheeler {
      * first in which the original string ends up.
      */
     public static void transform() {
-/*        DynArray da = new DynArray(16);
-
-        while (!BinaryStdIn.isEmpty()) {
-            da.add(BinaryStdIn.readChar());
-        }
-
-        String s = da.getAsString(); */
         String s = BinaryStdIn.readString();
         CircularSuffixArray csa = new CircularSuffixArray(s);
 
@@ -103,54 +60,48 @@ public class BurrowsWheeler {
         BinaryStdOut.write(first);
 
         for (int i = 0; i < s.length(); i++) {
-            // System.out.println("i:" + i + ", " + getLastCharOfStringAtIndex(s, index[i]));
             BinaryStdOut.write((byte) (getLastCharOfStringAtIndex(s, index[i]) & MAX_BYTE_VALUE));
         }
 
         BinaryStdOut.close();
     }
 
-    // apply Burrows-Wheeler inverse transform, reading from standard input and writing to standard output
+    /**
+     * Apply Burrows-Wheeler inverse transform, reading from standard input and writing to standard
+     * output
+     */
     public static void inverseTransform() {
-       // DynArray da = new DynArray(16);
 
         int first = BinaryStdIn.readInt();
-/*
-        while (!BinaryStdIn.isEmpty()) {
-            da.add(BinaryStdIn.readChar());
-        }
-
-        // the t array
-        char[] t = da.getAsCharArray();
-
-        da = null; */
 
         char[] t = BinaryStdIn.readString().toCharArray();
 
         // the firsts array contains the characters of t in sorted order
         char[] plain = decode(t, first);
 
-        // System.out.println(Arrays.toString(plain));
-
         for (int i = 0; i < plain.length; i++) {
             BinaryStdOut.write((byte) (plain[i] & MAX_BYTE_VALUE));
         }
 
         BinaryStdOut.close();
-
     }
 
     private static char getLastCharOfStringAtIndex(String s, int index) {
-        return Util.getIthStringsDthChar(s, index + s.length() - 1);
+        return s.charAt((index + s.length() - 1) % s.length());
     }
 
+    /**
+     * Decodes the encoded char array using the value first
+     *
+     * @param t     the encoded array
+     * @param first the first value provided by the encoder
+     * @return the decoded array
+     */
     private static char[] decode(char[] t, int first) {
-
-        //System.out.println("input:"+Arrays.toString(t)+", first:"+first);
 
         SortResult sr = sort(t);
 
-        int[] next = getNext(t, sr.sorted, sr.freq, first);
+        int[] next = getNext(t, sr.sorted, sr.freq);
 
         char[] output = new char[t.length];
         int current = first;
@@ -159,26 +110,30 @@ public class BurrowsWheeler {
             current = next[current];
         }
 
-        //System.out.println("output:"+Arrays.toString(output));
-
         return output;
     }
 
+    /**
+     * LSD Radix sort & frequency counting of the 8-bit alphabet
+     *
+     * @param a character array
+     * @return sorted character array
+     */
     private static SortResult sort(char[] a) {
         int n = a.length;
-        int R = 256;   // extend ASCII alphabet size
+        int radix = RADIX;   // extend ASCII alphabet size
         char[] aux = new char[n];
-        int[] freq = new int[256];
+        int[] freq = new int[radix];
 
         // compute frequency counts
-        int[] count = new int[R + 1];
+        int[] count = new int[radix + 1];
         for (int i = 0; i < n; i++) {
             count[a[i] + 1]++;
             freq[a[i]]++;
         }
 
         // compute cumulates
-        for (int r = 0; r < R; r++)
+        for (int r = 0; r < radix; r++)
             count[r + 1] += count[r];
 
         // move data
@@ -189,9 +144,16 @@ public class BurrowsWheeler {
 
     }
 
-    private static int[] getNext(char[] t, char[] firsts, int[] freq, int first) {
+    /**
+     * Returns the next character for the BW decoder algorithm
+     *
+     * @param t      the last character of the suffix array
+     * @param firsts the first character of the suffix array
+     * @param freq   the frequency count of the alphabet
+     * @return the "next" array for the BW decoder
+     */
+    private static int[] getNext(char[] t, char[] firsts, int[] freq) {
         int[] next = new int[t.length];
-
 
         int[][] loc = new int[256][0];
         int[] used = new int[256];
@@ -216,18 +178,12 @@ public class BurrowsWheeler {
             next[i] = firstPos;
         }
 
-        /*
-        for (int i = 0; i < loc.length; i++) {
-            if (loc[i].length > 0) {
-                System.out.format("\n%c:%s", i, Arrays.toString(loc[i]));
-            }
-        }
-        */
-
-
         return next;
     }
 
+    /**
+     * Result of sorting and frequency counting
+     */
     private static class SortResult {
         char[] sorted;
         int[] freq;

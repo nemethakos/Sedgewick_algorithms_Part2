@@ -23,7 +23,7 @@ public class MoveToFront {
                 break;
             default:
                 System.out.println("Only + or - is allowed!");
-
+                break;
         }
     }
 
@@ -40,9 +40,9 @@ public class MoveToFront {
         BinaryStdOut.close();
     }
 
-    // apply move-to-front decoding, reading from standard input and writing to standard output
-
     /**
+     * <p></p>Apply move-to-front decoding, reading from standard input and writing to standard
+     * output
      * <p>Move-to-front decoding. Initialize an ordered sequence of 256 characters, where extended
      * ASCII character i appears ith in the sequence.
      * <p>
@@ -61,7 +61,7 @@ public class MoveToFront {
             int index = Byte.toUnsignedInt(BinaryStdIn.readByte());
             int value = alphabet[index];
             BinaryStdOut.write((byte) (value & MAX_BYTE_VALUE));
-            int out = moveToFront(alphabet, (byte) (value & MAX_BYTE_VALUE));
+            moveToFront(alphabet, (byte) (value & MAX_BYTE_VALUE));
         }
         BinaryStdOut.close();
     }
@@ -74,12 +74,13 @@ public class MoveToFront {
         return alphabet;
     }
 
-    private static void moveToFrontOneStep(byte[] alphabet, byte in, int from, int to) {
-        int out = moveToFront(alphabet, in);
-        String buf = printBuffer(alphabet, from, to);
-        System.out.println(String.format("in: %c, out: %2d, buf: %s", in, out, buf));
-    }
-
+    /**
+     * Moves the <code>character</code> to the front of array <code>alphabet</code>
+     *
+     * @param alphabet  the alphabet array
+     * @param character the character to move to the front
+     * @return the index of character before moving to front
+     */
     private static int moveToFront(byte[] alphabet, byte character) {
         // get old index
         int index = getIndex(alphabet, character);
@@ -90,21 +91,15 @@ public class MoveToFront {
         alphabet[0] = temp;
 
         return index;
-
     }
 
-    private static String printBuffer(byte[] alphabet, int from, int to) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = from; i <= to; i++) {
-            char character = (char) (alphabet[i] & MAX_BYTE_VALUE);
-            if ((character & MAX_BYTE_VALUE) <= ' ') {
-                character = '_';
-            }
-            sb.append(String.format("%c", character));
-        }
-        return sb.toString();
-    }
-
+    /**
+     * Linear search for the character in the alphabet array
+     *
+     * @param alphabet  the alphabet array
+     * @param character the character to search for
+     * @return the index of character in array
+     */
     private static int getIndex(byte[] alphabet, int character) {
         for (int i = 0; i < ALPHABET_SIZE; i++) {
             if ((alphabet[i] & MAX_BYTE_VALUE) == (character & MAX_BYTE_VALUE)) {

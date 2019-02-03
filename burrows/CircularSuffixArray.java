@@ -1,70 +1,51 @@
-import java.util.Arrays;
-
 public class CircularSuffixArray {
 
-    private static final int MAX_BYTE_VALUE = 255;
-   // String base;
-    private int[] index;
+    private final char[] s;
+    private final int length;
+    private final int[] index;
 
     // circular suffix array of s
     public CircularSuffixArray(String s) {
         if (s == null) {
             throw new IllegalArgumentException();
         }
-        index = lsdSort(s);
-    }
+        this.s = s.toCharArray();
+        this.length = s.length();
+        this.index = new int[length];
 
-    private static int[] lsdSort(String suffixStr) {
-
-        // use char array instead of String
-        char[] suffix = suffixStr.toCharArray();
-
-        int suffixLength = suffix.length;
-
-        int[] index = new int[suffixLength];
-
-        // initialize index
-        for (int i = 0; i < index.length; i++) {
+        // init index
+        for (int i = 0; i < length; i++) {
             index[i] = i;
         }
+        sort(0, length - 1, 0);
+    }
 
-        int[] aux = new int[suffixLength];
+    // unit testing (required)
+    public static void main(String[] args) {
 
-        int radix = 256;
+        String base = "abcd\u00FF\u00FE\u00FD\u0000\u0001\u0002efgh";
 
-        int[] count = new int[radix + 1];
+        CircularSuffixArray csa = new CircularSuffixArray(base);
 
-        for (int characterIndexToSort = suffixLength - 1; characterIndexToSort >= 0;
-             characterIndexToSort--) {
-            // reuse count
-            Arrays.fill(count, 0);
+        System.out.println("length: " + csa.length());
 
-            // compute frequency counts
-            for (int i = 0; i < suffixLength; i++) {
-                int offset = index[i] + characterIndexToSort;
-                int c = (suffix[offset % suffixLength] & MAX_BYTE_VALUE);
-                count[c + 1]++;
-            }
-
-            // transform count to indices
-            for (int r = 0; r < radix; r++) {
-                count[r + 1] += count[r];
-            }
-
-            // distribute
-            for (int i = 0; i < suffixLength; i++) {
-                int offset = index[i] + characterIndexToSort;
-                int c = (suffix[offset % suffixLength] & MAX_BYTE_VALUE);
-                int pos = count[c]++;
-                aux[pos] = index[i];
-            }
-            // copy back
-            for (int i = 0; i < suffixLength; i++) {
-                index[i] = aux[i];
-            }
+        for (int i = 0; i < csa.length(); i++) {
+            System.out.println(csa.index[i]);
+            System.out.println(getStringFromBase(base, csa.index(i)));
         }
+    }
 
-        return index;
+    private static String getStringFromBase(String base, int offset) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = offset; i < offset + base.length(); i++) {
+            char character = base.charAt(i % base.length());
+            String str = "" + character;
+            if (character < 32 || character > 126) {
+                str = "0x" + Integer.toString(character, 16);
+            }
+            sb.append(str + " ");
+        }
+        return sb.toString();
     }
 
     // length of s
@@ -80,19 +61,49 @@ public class CircularSuffixArray {
         return index[i];
     }
 
-    // unit testing (required)
-    public static void main(String[] args) {
+    // exchange index[i] and index[j]
+    private void exch(int i, int j) {
+        int temp = index[i];
+        index[i] = index[j];
+        index[j] = temp;
+    }
 
-       String base = "abcd\u00FF\u00FE\u00FD\u0000\u0001\u0002efgh";
+    // return the dth character of ithString, -1 if dthChar = length of ithString
+    private int charAt(int ithString, int dthChar) {
+        if (dthChar == length) return -1;
+        return this.s[((ithString + dthChar) % length)];
+    }
 
-        CircularSuffixArray csa = new CircularSuffixArray(base);
+    // 3-way string quicksort index[lo..hi] starting at dth character
+    private void sort(int lo, int hi, int d) {
 
-       System.out.println("length: " + csa.length());
-
-        for (int i = 0; i < csa.length(); i++) {
-            System.out.println(csa.index[i]);
-            System.out.println(Util.getStringFromBase(base, csa.index(i)));
+        if (hi <= lo || d >= length) {
+            return;
         }
 
+        int lt = lo;
+        int gt = hi;
+        int v = charAt(index[lo], d);
+        int i = lo + 1;
+
+        while (i <= gt) {
+            int t = charAt(index[i], d);
+            if (t < v) {
+                exch(lt++, i++);
+            }
+            else if (t > v) {
+                exch(i, gt--);
+            }
+            else {
+                i++;
+            }
+        }
+
+        // index[lo..lt-1] < v = index[lt..gt] < index[gt+1..hi].
+        sort(lo, lt - 1, d);
+        if (v >= 0) {
+            sort(lt, gt, d + 1);
+        }
+        sort(gt + 1, hi, d);
     }
 }
